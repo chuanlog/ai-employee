@@ -2,6 +2,15 @@
 
 > 基于 Spring Boot + AI Agent 的智能问答与运维系统
 
+## 配置须知
+1. 在你的虚拟机上想办法用docker把**vector-database.yml**跑一遍，把容器运行起来
+2. 把**application.yml**里面该填的api key（我标了“这里配阿里云的api key”的地方）去阿里云的模型服务里面获取并且填上去，一般api-key的格式为sk-xxxx
+3. 把**application.yml**里面的milvus.host改成你运行docker容器的地址
+4. 运行Main.java
+5. 用vscode的 live server插件运行前端的**src/main/resources/static/index.html**
+6. 访问对应网站，点击对话框左下角三个点上传知识库文件并开始问答。
+
+
 ## 📖 项目简介
 
 企业级智能业务代理系统，包含两大核心模块：

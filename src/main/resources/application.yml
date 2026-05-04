@@ -23,7 +23,7 @@ milvus:
 spring:
   ai:
     dashscope:
-      api-key:   # 这里配你的阿里云api key
+      api-key:   # 这里配阿里云的api key
       chat:
         options:
           timeout: 180000  # 超时时间180秒（3分钟）
