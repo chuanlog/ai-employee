@@ -117,7 +117,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -125,7 +125,14 @@
             <version>1.18.30</version>
             <scope>provided</scope>
         </dependency>
-        
+        <!-- 自动加载环境变量 -->
+        <dependency>
+            <groupId>me.paulschwarz</groupId>
+            <artifactId>spring-dotenv</artifactId>
+            <version>4.0.0</version>
+        </dependency>
+
+
         <!-- JSON Schema Generator - Spring AI 工具需要 -->
         <dependency>
             <groupId>com.github.victools</groupId>
@@ -137,7 +144,7 @@
             <artifactId>jsonschema-module-jackson</artifactId>
             <version>4.36.0</version>
         </dependency>
-        
+
         <!-- Spring AI MCP Client - 使用 WebFlux 版本 -->
         <!-- 注意：spring-ai-starter-mcp-client-webflux 已经包含了 mcp-annotations，无需单独引入 -->
         <dependency>
@@ -156,7 +163,7 @@
                     <mainClass>org.example.Main</mainClass>
                 </configuration>
             </plugin>
-            
+
             <!-- Maven 编译器插件，配置 Lombok 注解处理器 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

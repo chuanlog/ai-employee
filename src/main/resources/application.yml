@@ -23,7 +23,7 @@ milvus:
 spring:
   ai:
     dashscope:
-      api-key:   # 这里配阿里云的api key
+      api-key: ${DASHSCOPE_API_KEY:}  # 这里配阿里云的api key
       chat:
         options:
           timeout: 180000  # 超时时间180秒（3分钟）
@@ -52,7 +52,7 @@ spring:
 # 阿里云 DashScope Embedding API 配置
 dashscope:
   api:
-    key:   # 从环境变量读取或使用默认值（用于自定义配置）这里配阿里云的api key
+    key: ${DASHSCOPE_API_KEY:}# 从环境变量读取或使用默认值（用于自定义配置）这里配阿里云的api key
   embedding:
     model: text-embedding-v4  # 阿里云文本向量化模型
 
