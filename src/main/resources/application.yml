@@ -39,6 +39,11 @@ spring:
       port: 6379
       password: chenyongchuan0019
       timeout: 5s
+  datasource:
+    url: jdbc:mysql://47.116.141.4:3306/ai_employee?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: root
+    password: chenyongchuan0019
+    driver-class-name: com.mysql.cj.jdbc.Driver
     
     # Spring AI MCP 客户端配置
     # 如果使用mock数据，请注释这部分内容(目前使用docker，这段不要管)
@@ -76,6 +81,17 @@ rag:
 chat:
   session:
     ttl-hours: 168
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/**/*.xml
+  type-aliases-package: org.example.dto
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: assign_id
 
 # Prometheus 配置
 prometheus:
