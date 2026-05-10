@@ -33,6 +33,12 @@ spring:
           initial-interval: 2000  # 初始重试间隔2秒
           multiplier: 2  # 重试间隔倍数
           max-interval: 10000  # 最大重试间隔10秒
+  data:
+    redis:
+      host: 47.116.141.4
+      port: 6379
+      password: chenyongchuan0019
+      timeout: 5s
     
     # Spring AI MCP 客户端配置
     # 如果使用mock数据，请注释这部分内容(目前使用docker，这段不要管)
@@ -66,6 +72,10 @@ document:
 rag:
   top-k: 3  # 检索返回的最相似文档数量
   model: "qwen3-max"  # 大语言模型名称
+
+chat:
+  session:
+    ttl-hours: 168
 
 # Prometheus 配置
 prometheus:
