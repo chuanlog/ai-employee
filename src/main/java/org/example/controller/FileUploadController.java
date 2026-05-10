@@ -1,5 +1,8 @@
 package org.example.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.example.config.FileUploadConfig;
 import org.example.dto.FileUploadRes;
 import org.example.service.VectorIndexService;
@@ -21,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RestController
+@Tag(name = "文件管理", description = "提供知识库文件上传与索引构建能力")
 public class FileUploadController {
 
     private static final Logger logger = LoggerFactory.getLogger(FileUploadController.class);
@@ -31,6 +35,7 @@ public class FileUploadController {
     @Autowired
     private VectorIndexService vectorIndexService;
 
+    @Operation(summary = "上传知识库文件", description = "上传文件并创建对应的向量索引。")
     @PostMapping(value = "/api/upload", consumes = "multipart/form-data")
     public ResponseEntity<?> upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
@@ -105,9 +110,13 @@ public class FileUploadController {
     /**
      * 统一 API 响应格式
      */
+    @Schema(name = "FileUploadApiWrapper", description = "统一接口响应包装")
     public static class ApiResponse<T> {
+        @Schema(description = "业务状态码", example = "200")
         private int code;
+        @Schema(description = "响应消息", example = "success")
         private String message;
+        @Schema(description = "响应数据体")
         private T data;
 
         public int getCode() {
@@ -133,6 +142,14 @@ public class FileUploadController {
         public void setData(T data) {
             this.data = data;
         }
+    }
+
+    @Schema(name = "FileUploadApiResponse", description = "文件上传成功响应")
+    public static class FileUploadApiResponse extends ApiResponse<FileUploadRes> {
+    }
+
+    @Schema(name = "UploadErrorApiResponse", description = "文件上传失败响应")
+    public static class UploadErrorApiResponse extends ApiResponse<String> {
     }
 
     private String getFileExtension(String filename) {

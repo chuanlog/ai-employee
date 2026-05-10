@@ -1,14 +1,21 @@
 package org.example.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
 @Setter
 @Getter
+@Schema(description = "文件上传结果")
 public class FileUploadRes {
 
+    @Schema(description = "原始文件名", example = "knowledge-base.md")
     private String fileName;
+
+    @Schema(description = "服务端保存路径", example = "./uploads/knowledge-base.md")
     private String filePath;
+
+    @Schema(description = "文件大小，单位字节", example = "2048")
     private Long fileSize;
 
     public FileUploadRes() {

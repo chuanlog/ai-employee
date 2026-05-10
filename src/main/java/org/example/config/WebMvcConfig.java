@@ -23,8 +23,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // 配置静态资源映射
+        // 保留 Spring Boot 默认静态资源位置，避免影响 swagger-ui 等依赖资源加载。
         registry.addResourceHandler("/**")
-                .addResourceLocations("classpath:/static/");
+                .addResourceLocations(
+                        "classpath:/META-INF/resources/",
+                        "classpath:/resources/",
+                        "classpath:/static/",
+                        "classpath:/public/");
     }
 }

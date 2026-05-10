@@ -8,6 +8,9 @@ import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
 import com.alibaba.cloud.ai.graph.streaming.OutputType;
 import com.alibaba.cloud.ai.graph.streaming.StreamingOutput;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Getter;
 import lombok.Setter;
 import org.example.service.AiOpsService;
@@ -36,6 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @RestController
 @RequestMapping("/api")
+@Tag(name = "AI 对话与运维", description = "提供普通对话、流式对话、AIOps 分析和会话管理接口")
 public class ChatController {
 
     private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
@@ -61,6 +65,7 @@ public class ChatController {
      * 普通对话接口（支持工具调用）
      * 与 /chat_react 逻辑一致，但直接返回完整结果而非流式输出
      */
+    @Operation(summary = "普通对话", description = "处理普通问答请求并返回完整回答。")
     @PostMapping("/chat")
     public ResponseEntity<ApiResponse<ChatResponse>> chat(@RequestBody ChatRequest request) {
         try {
@@ -113,6 +118,7 @@ public class ChatController {
     /**
      * 清空会话历史
      */
+    @Operation(summary = "清空会话历史", description = "清理指定会话的上下文记录。")
     @PostMapping("/chat/clear")
     public ResponseEntity<ApiResponse<String>> clearChatHistory(@RequestBody ClearRequest request) {
         try {
@@ -140,6 +146,7 @@ public class ChatController {
      * ReactAgent 对话接口（SSE 流式模式，支持多轮对话，支持自动工具调用，例如获取当前时间，查询日志，告警等）
      * 支持 session 管理，保留对话历史
      */
+    @Operation(summary = "流式对话", description = "以 SSE 方式持续返回对话内容。")
     @PostMapping(value = "/chat_stream", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter chatStream(@RequestBody ChatRequest request) {
         SseEmitter emitter = new SseEmitter(300000L); // 5分钟超时
@@ -281,6 +288,7 @@ public class ChatController {
      * AI 智能运维接口（SSE 流式模式）- 自动分析告警并生成运维报告
      * 无需用户输入，自动执行告警分析流程
      */
+    @Operation(summary = "AI 运维分析", description = "启动 AI 运维分析并流式返回结果。")
     @PostMapping(value = "/ai_ops", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter aiOps() {
         SseEmitter emitter = new SseEmitter(600000L); // 10分钟超时（告警分析可能较慢）
@@ -376,6 +384,7 @@ public class ChatController {
     /**
      * 获取会话信息
      */
+    @Operation(summary = "查询会话信息", description = "查询指定会话的基础信息。")
     @GetMapping("/chat/session/{sessionId}")
     public ResponseEntity<ApiResponse<SessionInfoResponse>> getSessionInfo(@PathVariable String sessionId) {
         try {
@@ -509,13 +518,17 @@ public class ChatController {
      */
     @Setter
     @Getter
+    @Schema(name = "ChatRequest", description = "聊天请求参数")
     public static class ChatRequest {
         @com.fasterxml.jackson.annotation.JsonProperty(value = "Id")
         @com.fasterxml.jackson.annotation.JsonAlias({"id", "ID"})
+        @Schema(description = "会话 ID，留空时自动创建", example = "session-001")
         private String Id;
         
         @com.fasterxml.jackson.annotation.JsonProperty(value = "Question")
         @com.fasterxml.jackson.annotation.JsonAlias({"question", "QUESTION"})
+        @Schema(description = "用户问题内容", requiredMode = Schema.RequiredMode.REQUIRED,
+                example = "帮我分析最近一次 CPU 告警的可能原因")
         private String Question;
 
     }
@@ -525,9 +538,12 @@ public class ChatController {
      */
     @Setter
     @Getter
+    @Schema(name = "ClearRequest", description = "清空会话历史请求")
     public static class ClearRequest {
         @com.fasterxml.jackson.annotation.JsonProperty(value = "Id")
         @com.fasterxml.jackson.annotation.JsonAlias({"id", "ID"})
+        @Schema(description = "待清空的会话 ID", requiredMode = Schema.RequiredMode.REQUIRED,
+                example = "session-001")
         private String Id;
     }
 
@@ -538,9 +554,13 @@ public class ChatController {
      */
     @Setter
     @Getter
+    @Schema(name = "SessionInfoResponse", description = "会话信息")
     public static class SessionInfoResponse {
+        @Schema(description = "会话 ID", example = "session-001")
         private String sessionId;
+        @Schema(description = "当前保留的消息对数量", example = "3")
         private int messagePairCount;
+        @Schema(description = "会话创建时间戳", example = "1715318400000")
         private long createTime;
     }
 
@@ -550,9 +570,13 @@ public class ChatController {
      */
     @Setter
     @Getter
+    @Schema(name = "ChatResponse", description = "聊天结果")
     public static class ChatResponse {
+        @Schema(description = "是否成功", example = "true")
         private boolean success;
+        @Schema(description = "AI 返回内容", example = "根据当前告警信息，建议先检查 CPU 突增进程。")
         private String answer;
+        @Schema(description = "失败时的错误信息", example = "问题内容不能为空")
         private String errorMessage;
 
         public static ChatResponse success(String answer) {
@@ -576,8 +600,11 @@ public class ChatController {
      */
     @Setter
     @Getter
+    @Schema(name = "SseMessage", description = "SSE 消息体")
     public static class SseMessage {
+        @Schema(description = "消息类型：content 为内容分片，error 为错误，done 为结束标记", example = "content")
         private String type;  // content: 内容块, error: 错误, done: 完成
+        @Schema(description = "消息内容", example = "正在分析告警数据...")
         private String data;
 
         public static SseMessage content(String data) {
@@ -605,9 +632,13 @@ public class ChatController {
 
     @Getter
     @Setter
+    @Schema(name = "ApiResponse", description = "统一接口响应包装")
     public static class ApiResponse<T> {
+        @Schema(description = "业务状态码", example = "200")
         private int code;
+        @Schema(description = "响应消息", example = "success")
         private String message;
+        @Schema(description = "响应数据体")
         private T data;
 
         public static <T> ApiResponse<T> success(T data) {
@@ -625,5 +656,17 @@ public class ChatController {
             return response;
         }
 
+    }
+
+    @Schema(name = "ChatApiResponse", description = "普通对话接口响应")
+    public static class ChatApiResponse extends ApiResponse<ChatResponse> {
+    }
+
+    @Schema(name = "StringApiResponse", description = "字符串结果响应")
+    public static class StringApiResponse extends ApiResponse<String> {
+    }
+
+    @Schema(name = "SessionInfoApiResponse", description = "会话信息接口响应")
+    public static class SessionInfoApiResponse extends ApiResponse<SessionInfoResponse> {
     }
 }

@@ -19,16 +19,16 @@ import java.util.List;
 public class WebConfig implements WebMvcConfigurer {
 
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        // 添加 UTF-8 字符串转换器
-        StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
-        stringConverter.setWriteAcceptCharset(false); // 不设置 Accept-Charset
-        converters.add(0, stringConverter);
-        
-        // 添加 Jackson JSON 转换器，确保 UTF-8 编码
-        MappingJackson2HttpMessageConverter jsonConverter = new MappingJackson2HttpMessageConverter();
-        jsonConverter.setDefaultCharset(StandardCharsets.UTF_8);
-        converters.add(1, jsonConverter);
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
+        for (HttpMessageConverter<?> converter : converters) {
+            if (converter instanceof StringHttpMessageConverter stringConverter) {
+                stringConverter.setDefaultCharset(StandardCharsets.UTF_8);
+                stringConverter.setWriteAcceptCharset(false);
+            }
+            if (converter instanceof MappingJackson2HttpMessageConverter jsonConverter) {
+                jsonConverter.setDefaultCharset(StandardCharsets.UTF_8);
+            }
+        }
     }
     
     @Bean
