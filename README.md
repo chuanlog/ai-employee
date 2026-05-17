@@ -3,16 +3,16 @@
 > 基于 Spring Boot + AI Agent 的智能问答与运维系统
 
 ## 配置须知
-1. 在你的虚拟机上想办法用docker把**vector-database.yml**跑一遍，把容器运行起来
-2. 把**application.yml**里面该填的api key（我标了“这里配阿里云的api key”的地方）去阿里云的模型服务里面获取并且填上去，一般api-key的格式为sk-xxxx
-3. 把**application.yml**里面的milvus.host改成你运行docker容器的地址
-4. 运行Main.java
-5. 访问localhost:9900
+1. 当前项目默认使用已部署好的云端环境，无需再在本地或虚拟机里执行 `vector-database.yml` 启动 Docker 容器。
+2. `application.yml` 已预置云端连接信息：Milvus、MySQL、Redis 当前均接入 `47.116.141.4` 对应的云服务器环境，可直接使用。
+3. 你只需要补充 `application.yml` 中标注“这里配阿里云的api key”的 DashScope API Key，或通过环境变量 `DASHSCOPE_API_KEY` 注入，格式一般为 `sk-xxxx`。
+4. 只有在你想切换到自己的数据库或自建容器环境时，才需要修改 `milvus.host`、`spring.data.redis.host`、`spring.datasource.url` 等配置。
+5. 配置完成后直接运行 `Main.java`，再访问 `http://localhost:9900` 即可。
 
 
 ## 📖 项目简介
 
-企业级智能业务代理系统，包含两大核心模块：
+智能业务代理系统，包含两大核心模块：
 
 ### 1. RAG 智能问答
 集成 Milvus 向量数据库和阿里云 DashScope，提供基于检索增强生成的智能问答能力，支持多轮对话和流式输出。
@@ -45,10 +45,10 @@
 SuperBizAgent/
 ├── src/main/java/org/example/
 │   ├── controller/
-│   │   └── ChatController.java        # 统一接口控制器 ⭐
+│   │   └── ChatController.java        # 统一接口控制器 
 │   ├── service/
-│   │   ├── ChatService.java           # 对话服务 ⭐
-│   │   ├── AiOpsService.java          # AIOps 服务 ⭐
+│   │   ├── ChatService.java           # 对话服务 
+│   │   ├── AiOpsService.java          # AIOps 服务 
 │   │   ├── RagService.java            # RAG 服务
 │   │   └── Vector*.java               # 向量服务
 │   ├── agent/tool/                    # Agent 工具集
@@ -64,7 +64,7 @@ SuperBizAgent/
 ```
 
 
-## 📡 核心接口
+## 核心接口
 
 ### 1. 智能问答接口
 
@@ -110,7 +110,7 @@ POST /api/ai_ops
 - `GET /milvus/health` - Milvus 健康检查
 
 
-## ⚙️ 核心配置
+## 核心配置
 
 ### application.yml
 
