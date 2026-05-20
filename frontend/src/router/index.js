@@ -3,6 +3,8 @@ import Login from '../views/Login.vue'
 import Dashboard from '../views/Dashboard.vue'
 import UserList from '../views/UserList.vue'
 import Chat from '../views/Chat.vue'
+import TicketList from '../views/TicketList.vue'
+import MyTickets from '../views/MyTickets.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -13,7 +15,9 @@ const routes = [
     children: [
       { path: '', redirect: '/dashboard/chat' },
       { path: 'chat', component: Chat },
-      { path: 'users', component: UserList }
+      { path: 'users', component: UserList },
+      { path: 'tickets', component: TicketList },
+      { path: 'my-tickets', component: MyTickets }
     ]
   }
 ]

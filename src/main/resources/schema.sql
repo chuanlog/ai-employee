@@ -16,3 +16,22 @@ CREATE TABLE IF NOT EXISTS sys_user (
 INSERT INTO sys_user (username, password, email, role, status, created_at, updated_at)
 SELECT 'admin', '123456', 'admin@example.com', 1, 1, NOW(), NOW()
 WHERE NOT EXISTS (SELECT * FROM sys_user WHERE username = 'admin');
+
+CREATE TABLE IF NOT EXISTS sys_ticket (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '工单ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    username VARCHAR(50) NOT NULL COMMENT '用户名',
+    question TEXT NOT NULL COMMENT '问题内容',
+    ai_answer TEXT COMMENT 'AI回答内容',
+    status INT NOT NULL DEFAULT 1 COMMENT '状态：1-待处理，2-处理中，3-已完成',
+    handler_id BIGINT COMMENT '处理人ID',
+    handler_name VARCHAR(50) COMMENT '处理人姓名',
+    handled_at DATETIME COMMENT '处理时间',
+    result TEXT COMMENT '处理结果',
+    follow_up TEXT COMMENT '回访记录',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    updated_at DATETIME NOT NULL COMMENT '更新时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单表';

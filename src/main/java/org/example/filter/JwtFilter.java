@@ -30,6 +30,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 Long userId = Long.parseLong(claims.getSubject());
                 request.setAttribute("userId", userId);
                 request.setAttribute("userRole", claims.get("role", Object.class));
+                request.setAttribute("username", claims.get("username", String.class));
             } catch (Exception e) {
                 // Token无效，继续执行，让后续处理决定是否拒绝
             }
