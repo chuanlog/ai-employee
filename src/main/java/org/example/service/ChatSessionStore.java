@@ -33,11 +33,11 @@ public class ChatSessionStore {
         this.sessionTtl = Duration.ofHours(ttlHours);
     }
 
-    public ChatSession getOrCreate(String sessionId) {
+    public ChatSession getOrCreate(String sessionId, Long userId) {
         return get(sessionId).orElseGet(() -> {
-            ChatSession session = new ChatSession(sessionId);
+            ChatSession session = new ChatSession(sessionId, userId);
             save(session);
-            logger.info("创建新会话并写入 Redis - SessionId: {}", sessionId);
+            logger.info("创建新会话并写入 Redis - SessionId: {}, UserId: {}", sessionId, userId);
             return session;
         });
     }
@@ -74,6 +74,22 @@ public class ChatSessionStore {
         session.clearHistory();
         save(session);
         return true;
+    }
+
+    public void enqueueSyncMessage(Long userId, String sessionId, String role, String content) {
+        try {
+            java.util.Map<String, Object> msg = new java.util.HashMap<>();
+            msg.put("userId", userId);
+            msg.put("sessionId", sessionId);
+            msg.put("role", role);
+            msg.put("content", content);
+            msg.put("createdAt", java.time.LocalDateTime.now().toString());
+            
+            String json = objectMapper.writeValueAsString(msg);
+            redisTemplate.opsForList().rightPush("chat:sync:queue", json);
+        } catch (Exception e) {
+            logger.error("消息加入同步队列失败", e);
+        }
     }
 
     private String buildKey(String sessionId) {

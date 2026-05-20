@@ -14,6 +14,9 @@
         <el-menu-item index="tickets" v-if="isAdmin">
           <span>🎫 工单管理</span>
         </el-menu-item>
+        <el-menu-item index="knowledge-base" v-if="isAdmin">
+          <span>📚 知识库管理</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>
@@ -29,12 +32,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import router from '../router'
+import { useRoute } from 'vue-router'
 
 const activeMenu = ref('chat')
 const user = ref(null)
+const route = useRoute()
 
 const isAdmin = computed(() => {
   return user.value?.role === 'admin' || user.value?.role === 1
@@ -45,12 +50,25 @@ onMounted(() => {
   if (userStr) {
     user.value = JSON.parse(userStr)
   }
+  syncActiveMenu(route.path)
 })
 
 const handleMenuSelect = (key) => {
   activeMenu.value = key
   router.push(`/dashboard/${key}`)
 }
+
+const syncActiveMenu = (path) => {
+  if (path.startsWith('/dashboard/')) {
+    activeMenu.value = path.replace('/dashboard/', '') || 'chat'
+  }
+}
+
+watch(
+  () => route.path,
+  (path) => syncActiveMenu(path),
+  { immediate: true }
+)
 
 const logout = () => {
   localStorage.removeItem('token')

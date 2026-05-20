@@ -21,12 +21,20 @@ import java.util.Map;
 public class ChatSession {
 
     private String sessionId;
+    private Long userId; // 新增 userId 字段
     // 历史消息格式：[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}]
     private List<Map<String, String>> messageHistory = new ArrayList<>();
     private long createTime;
 
     public ChatSession(String sessionId) {
         this.sessionId = sessionId;
+        this.createTime = System.currentTimeMillis();
+        this.messageHistory = new ArrayList<>();
+    }
+
+    public ChatSession(String sessionId, Long userId) {
+        this.sessionId = sessionId;
+        this.userId = userId;
         this.createTime = System.currentTimeMillis();
         this.messageHistory = new ArrayList<>();
     }

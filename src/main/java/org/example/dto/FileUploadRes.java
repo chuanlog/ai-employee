@@ -12,7 +12,7 @@ public class FileUploadRes {
     @Schema(description = "原始文件名", example = "knowledge-base.md")
     private String fileName;
 
-    @Schema(description = "服务端保存路径", example = "./uploads/knowledge-base.md")
+    @Schema(description = "知识库对象标识", example = "knowledge-base/2026/05/20/uuid-knowledge-base.md")
     private String filePath;
 
     @Schema(description = "文件大小，单位字节", example = "2048")

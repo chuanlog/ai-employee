@@ -10,7 +10,7 @@
           {{ msg.type === 'user' ? '我' : 'AI' }}
         </div>
         <div class="content">
-          <p>{{ msg.content }}</p>
+          <div class="markdown-body" v-html="msg.content ? marked.parse(msg.content) : ''"></div>
           <div v-if="msg.type === 'ai' && msg.showTransferBtn" class="transfer-btn-container">
             <el-button size="small" type="danger" @click="transferToHuman(msg.question)">
               转人工
@@ -33,29 +33,50 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from '../axios'
+import { marked } from 'marked'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
+import 'github-markdown-css/github-markdown.css'
+
+marked.setOptions({
+  highlight: function (code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext'
+    return hljs.highlight(code, { language }).value
+  },
+  breaks: true,
+})
 
 const messages = ref([])
 const inputMessage = ref('')
 const messagesContainer = ref(null)
-const STORAGE_KEY = 'chat_messages'
 
-onMounted(() => {
-  const savedMessages = localStorage.getItem(STORAGE_KEY)
-  if (savedMessages) {
-    messages.value = JSON.parse(savedMessages)
-  } else {
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/chat/history')
+    if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      messages.value = res.data.data.map(msg => ({
+        type: msg.role === 'assistant' ? 'ai' : 'user',
+        content: msg.content,
+        showTransferBtn: false
+      }))
+    } else {
+      messages.value = [
+        { type: 'ai', content: '您好！我是 AI Employee，请问有什么可以帮助您的？' }
+      ]
+    }
+    await nextTick(() => {
+      scrollToBottom()
+    })
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
     messages.value = [
       { type: 'ai', content: '您好！我是 AI Employee，请问有什么可以帮助您的？' }
     ]
   }
 })
-
-watch(messages, (newMessages) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newMessages))
-}, { deep: true })
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
@@ -73,7 +94,6 @@ const sendMessage = async () => {
   
   try {
     const response = await axios.post('/api/chat', {
-      Id: 'session-' + Date.now(),
       Question: question
     })
     
@@ -206,6 +226,26 @@ const scrollToBottom = () => {
   padding: 12px 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.markdown-body {
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+/* User message styles override */
+.message.user .markdown-body {
+  color: white !important;
+}
+.message.user .markdown-body p, 
+.message.user .markdown-body li {
+  color: white !important;
+}
+.message.user .markdown-body code {
+  color: #333 !important;
 }
 
 .content p {
