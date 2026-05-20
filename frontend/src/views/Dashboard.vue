@@ -5,8 +5,14 @@
         <el-menu-item index="chat">
           <span>📧 智能对话</span>
         </el-menu-item>
+        <el-menu-item index="my-tickets">
+          <span>📋 我的工单</span>
+        </el-menu-item>
         <el-menu-item index="users">
           <span>👤 用户管理</span>
+        </el-menu-item>
+        <el-menu-item index="tickets" v-if="isAdmin">
+          <span>🎫 工单管理</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -23,12 +29,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import router from '../router'
 
 const activeMenu = ref('chat')
 const user = ref(null)
+
+const isAdmin = computed(() => {
+  return user.value?.role === 'admin' || user.value?.role === 1
+})
 
 onMounted(() => {
   const userStr = localStorage.getItem('user')

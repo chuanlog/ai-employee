@@ -11,6 +11,11 @@
         </div>
         <div class="content">
           <p>{{ msg.content }}</p>
+          <div v-if="msg.type === 'ai' && msg.showTransferBtn" class="transfer-btn-container">
+            <el-button size="small" type="danger" @click="transferToHuman(msg.question)">
+              转人工
+            </el-button>
+          </div>
         </div>
       </div>
     </div>
@@ -29,7 +34,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from '../axios'
 
 const messages = ref([])
@@ -56,7 +61,7 @@ const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
   
   messages.value.push({ type: 'user', content: inputMessage.value })
-  const tempMessage = { type: 'ai', content: '' }
+  const tempMessage = { type: 'ai', content: '', question: inputMessage.value, showTransferBtn: false }
   messages.value.push(tempMessage)
   
   const question = inputMessage.value
@@ -75,6 +80,8 @@ const sendMessage = async () => {
     console.log('API 响应:', response)
     
     let answer = '暂无回答'
+    let showTransfer = false
+    
     if (response.data?.data?.answer) {
       answer = response.data.data.answer
     } else if (response.data?.Answer) {
@@ -85,17 +92,48 @@ const sendMessage = async () => {
       answer = response.data
     }
     
+    showTransfer = true
+    
     console.log('提取到的回答:', answer)
     messages.value[messages.value.length - 1].content = answer
+    messages.value[messages.value.length - 1].showTransferBtn = showTransfer
   } catch (error) {
     console.error('请求失败:', error)
-    tempMessage.content = '抱歉，暂时无法回答您的问题，请稍后重试。'
+    tempMessage.content = '抱歉，暂时无法回答您的问题，请稍后重试。\n\n您也可以点击下方按钮转人工服务。'
+    tempMessage.showTransferBtn = true
     ElMessage.error('请求失败: ' + (error.response?.data?.message || error.message))
   }
   
   await nextTick(() => {
     scrollToBottom()
   })
+}
+
+const transferToHuman = async (question) => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要将此问题转人工处理吗？',
+      '确认转人工',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    const aiMessage = messages.value[messages.value.length - 1]
+    await axios.post('/api/tickets', { question, aiAnswer: aiMessage.content })
+    ElMessage.success('已成功提交工单，运维人员会尽快处理！')
+    
+    messages.value.push({ 
+      type: 'ai', 
+      content: '您的问题已提交工单，工单编号已生成。运维人员会尽快处理并回复您。' 
+    })
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('提交工单失败: ' + (error.response?.data?.message || error.response?.data || error.message))
+    }
+  }
 }
 
 const scrollToBottom = () => {
@@ -181,5 +219,10 @@ const scrollToBottom = () => {
   padding: 16px;
   background-color: white;
   border-top: 1px solid #eee;
+}
+
+.transfer-btn-container {
+  margin-top: 12px;
+  text-align: center;
 }
 </style>
