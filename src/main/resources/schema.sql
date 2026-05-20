@@ -35,3 +35,15 @@ CREATE TABLE IF NOT EXISTS sys_ticket (
     INDEX idx_status (status),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='工单表';
+
+CREATE TABLE IF NOT EXISTS sys_chat_message (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '消息ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    session_id VARCHAR(100) NOT NULL COMMENT '会话ID',
+    role VARCHAR(20) NOT NULL COMMENT '角色(user/assistant)',
+    content TEXT NOT NULL COMMENT '消息内容',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_session_id (session_id),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天记录表';

@@ -33,29 +33,38 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted, watch } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from '../axios'
 
 const messages = ref([])
 const inputMessage = ref('')
 const messagesContainer = ref(null)
-const STORAGE_KEY = 'chat_messages'
 
-onMounted(() => {
-  const savedMessages = localStorage.getItem(STORAGE_KEY)
-  if (savedMessages) {
-    messages.value = JSON.parse(savedMessages)
-  } else {
+onMounted(async () => {
+  try {
+    const res = await axios.get('/api/chat/history')
+    if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      messages.value = res.data.data.map(msg => ({
+        type: msg.role === 'assistant' ? 'ai' : 'user',
+        content: msg.content,
+        showTransferBtn: false
+      }))
+    } else {
+      messages.value = [
+        { type: 'ai', content: '您好！我是 AI Employee，请问有什么可以帮助您的？' }
+      ]
+    }
+    await nextTick(() => {
+      scrollToBottom()
+    })
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
     messages.value = [
       { type: 'ai', content: '您好！我是 AI Employee，请问有什么可以帮助您的？' }
     ]
   }
 })
-
-watch(messages, (newMessages) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newMessages))
-}, { deep: true })
 
 const sendMessage = async () => {
   if (!inputMessage.value.trim()) return
@@ -73,7 +82,6 @@ const sendMessage = async () => {
   
   try {
     const response = await axios.post('/api/chat', {
-      Id: 'session-' + Date.now(),
       Question: question
     })
     

@@ -55,6 +55,9 @@ public class ChatController {
 
     @Autowired
     private ChatSessionStore chatSessionStore;
+    
+    @Autowired
+    private org.example.service.ChatMessageService chatMessageService;
 
     private final ExecutorService executor = Executors.newCachedThreadPool();
     
@@ -67,9 +70,13 @@ public class ChatController {
      */
     @Operation(summary = "普通对话", description = "处理普通问答请求并返回完整回答。")
     @PostMapping("/chat")
-    public ResponseEntity<ApiResponse<ChatResponse>> chat(@RequestBody ChatRequest request) {
+    public ResponseEntity<ApiResponse<ChatResponse>> chat(@RequestBody ChatRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
         try {
-            logger.info("收到对话请求 - SessionId: {}, Question: {}", request.getId(), request.getQuestion());
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权访问"));
+            }
+            logger.info("收到对话请求 - UserId: {}, SessionId: {}, Question: {}", userId, request.getId(), request.getQuestion());
 
             // 参数校验
             if (request.getQuestion() == null || request.getQuestion().trim().isEmpty()) {
@@ -78,7 +85,8 @@ public class ChatController {
             }
 
             // 获取或创建会话
-            ChatSession session = getOrCreateSession(request.getId());
+            ChatSession session = getOrCreateSession(request.getId(), userId);
+
             
             // 获取历史消息
             List<Map<String, String>> history = session.getHistory();
@@ -105,6 +113,9 @@ public class ChatController {
             // 更新会话历史
             session.addMessage(request.getQuestion(), fullAnswer, MAX_WINDOW_SIZE);
             chatSessionStore.save(session);
+            chatSessionStore.enqueueSyncMessage(userId, session.getSessionId(), "user", request.getQuestion());
+            chatSessionStore.enqueueSyncMessage(userId, session.getSessionId(), "assistant", fullAnswer);
+            
             logger.info("已更新会话历史 - SessionId: {}, 当前消息对数: {}", 
                 request.getId(), session.getMessagePairCount());
             
@@ -148,8 +159,19 @@ public class ChatController {
      */
     @Operation(summary = "流式对话", description = "以 SSE 方式持续返回对话内容。")
     @PostMapping(value = "/chat_stream", produces = "text/event-stream;charset=UTF-8")
-    public SseEmitter chatStream(@RequestBody ChatRequest request) {
+    public SseEmitter chatStream(@RequestBody ChatRequest request, jakarta.servlet.http.HttpServletRequest httpRequest) {
         SseEmitter emitter = new SseEmitter(300000L); // 5分钟超时
+        
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        if (userId == null) {
+            try {
+                emitter.send(SseEmitter.event().name("message").data(SseMessage.error("未授权访问"), MediaType.APPLICATION_JSON));
+                emitter.complete();
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
 
         // 参数校验
         if (request.getQuestion() == null || request.getQuestion().trim().isEmpty()) {
@@ -165,10 +187,10 @@ public class ChatController {
 
         executor.execute(() -> {
             try {
-                logger.info("收到 ReactAgent 对话请求 - SessionId: {}, Question: {}", request.getId(), request.getQuestion());
+                logger.info("收到 ReactAgent 对话请求 - UserId: {}, SessionId: {}, Question: {}", userId, request.getId(), request.getQuestion());
 
                 // 获取或创建会话
-                ChatSession session = getOrCreateSession(request.getId());
+                ChatSession session = getOrCreateSession(request.getId(), userId);
                 
                 // 获取历史消息
                 List<Map<String, String>> history = session.getHistory();
@@ -254,6 +276,9 @@ public class ChatController {
                             // 更新会话历史
                             session.addMessage(request.getQuestion(), fullAnswer, MAX_WINDOW_SIZE);
                             chatSessionStore.save(session);
+                            chatSessionStore.enqueueSyncMessage(userId, session.getSessionId(), "user", request.getQuestion());
+                            chatSessionStore.enqueueSyncMessage(userId, session.getSessionId(), "assistant", fullAnswer);
+                            
                             logger.info("已更新会话历史 - SessionId: {}, 当前消息对数: {}", 
                                 request.getId(), session.getMessagePairCount());
                             
@@ -409,13 +434,51 @@ public class ChatController {
         }
     }
 
+    @Operation(summary = "获取最近历史记录", description = "获取当前用户的最近20条聊天记录，并同步到Redis上下文。")
+    @GetMapping("/chat/history")
+    public ResponseEntity<ApiResponse<List<Map<String, String>>>> getChatHistory(jakarta.servlet.http.HttpServletRequest httpRequest) {
+        try {
+            Long userId = (Long) httpRequest.getAttribute("userId");
+            if (userId == null) {
+                return ResponseEntity.status(401).body(ApiResponse.error("未授权访问"));
+            }
+
+            // 1. 查询 MySQL 取最近 20 条消息
+            List<org.example.entity.ChatMessageEntity> recentMessages = chatMessageService.getRecentMessages(userId, 20);
+            
+            // 2. 构造或更新 Redis Session
+            String sessionId = "user-" + userId;
+            ChatSession session = new ChatSession(sessionId, userId);
+            
+            List<Map<String, String>> historyList = new ArrayList<>();
+            for (org.example.entity.ChatMessageEntity msg : recentMessages) {
+                Map<String, String> map = new HashMap<>();
+                map.put("role", msg.getRole());
+                map.put("content", msg.getContent());
+                historyList.add(map);
+            }
+            // 保证上下文不超长，Redis 中我们只保留 MAX_WINDOW_SIZE * 2
+            int startIdx = Math.max(0, historyList.size() - MAX_WINDOW_SIZE * 2);
+            session.getMessageHistory().addAll(historyList.subList(startIdx, historyList.size()));
+            
+            // 3. 写入 Redis
+            chatSessionStore.save(session);
+            
+            // 4. 返回完整的前20条给前端渲染
+            return ResponseEntity.ok(ApiResponse.success(historyList));
+        } catch (Exception e) {
+            logger.error("获取历史记录失败", e);
+            return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
+        }
+    }
+
     // ==================== 辅助方法 ====================
 
-    private ChatSession getOrCreateSession(String sessionId) {
+    private ChatSession getOrCreateSession(String sessionId, Long userId) {
         if (sessionId == null || sessionId.isEmpty()) {
-            sessionId = UUID.randomUUID().toString();
+            sessionId = "user-" + userId;
         }
-        return chatSessionStore.getOrCreate(sessionId);
+        return chatSessionStore.getOrCreate(sessionId, userId);
     }
 
     /**
