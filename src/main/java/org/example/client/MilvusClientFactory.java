@@ -47,18 +47,7 @@ public class MilvusClientFactory {
             client = connectToMilvus();
             logger.info("成功连接到 Milvus");
 
-            // 2. 检查并创建 biz collection（如果不存在）
-            if (!collectionExists(client, MilvusConstants.MILVUS_COLLECTION_NAME)) {
-                logger.info("collection '{}' 不存在，正在创建...", MilvusConstants.MILVUS_COLLECTION_NAME);
-                createBizCollection(client);
-                logger.info("成功创建 collection '{}'", MilvusConstants.MILVUS_COLLECTION_NAME);
-                
-                // 创建索引
-                createIndexes(client);
-                logger.info("成功创建索引");
-            } else {
-                logger.info("collection '{}' 已存在", MilvusConstants.MILVUS_COLLECTION_NAME);
-            }
+            ensureCollectionReady(client);
 
             return client;
 
@@ -86,6 +75,33 @@ public class MilvusClientFactory {
         }
 
         return new MilvusServiceClient(builder.build());
+    }
+
+    public void ensureCollectionReady(MilvusServiceClient client) {
+        if (!collectionExists(client, MilvusConstants.MILVUS_COLLECTION_NAME)) {
+            logger.info("collection '{}' 不存在，正在创建...", MilvusConstants.MILVUS_COLLECTION_NAME);
+            createBizCollection(client);
+            logger.info("成功创建 collection '{}'", MilvusConstants.MILVUS_COLLECTION_NAME);
+            createIndexes(client);
+            logger.info("成功创建索引");
+        } else {
+            logger.info("collection '{}' 已存在", MilvusConstants.MILVUS_COLLECTION_NAME);
+        }
+    }
+
+    public void recreateCollection(MilvusServiceClient client) {
+        if (collectionExists(client, MilvusConstants.MILVUS_COLLECTION_NAME)) {
+            R<RpcStatus> dropResponse = client.dropCollection(DropCollectionParam.newBuilder()
+                    .withCollectionName(MilvusConstants.MILVUS_COLLECTION_NAME)
+                    .build());
+            if (dropResponse.getStatus() != 0) {
+                throw new RuntimeException("删除 collection 失败: " + dropResponse.getMessage());
+            }
+            logger.info("成功删除 collection '{}'", MilvusConstants.MILVUS_COLLECTION_NAME);
+        }
+        createBizCollection(client);
+        createIndexes(client);
+        logger.info("collection '{}' 已重建完成", MilvusConstants.MILVUS_COLLECTION_NAME);
     }
 
     /**

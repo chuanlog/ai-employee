@@ -47,3 +47,21 @@ CREATE TABLE IF NOT EXISTS sys_chat_message (
     INDEX idx_session_id (session_id),
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='聊天记录表';
+
+CREATE TABLE IF NOT EXISTS knowledge_document (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '文档ID',
+    file_name VARCHAR(255) NOT NULL COMMENT '原始文件名',
+    object_key VARCHAR(255) NOT NULL COMMENT 'MinIO对象Key',
+    content_type VARCHAR(100) COMMENT '文件内容类型',
+    file_size BIGINT NOT NULL DEFAULT 0 COMMENT '文件大小(字节)',
+    uploader_id BIGINT COMMENT '上传人ID',
+    uploader_name VARCHAR(50) COMMENT '上传人用户名',
+    status VARCHAR(32) NOT NULL DEFAULT 'PENDING' COMMENT '索引状态: PENDING/INDEXED/ERROR',
+    error_message VARCHAR(1000) COMMENT '索引错误信息',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    updated_at DATETIME NOT NULL COMMENT '更新时间',
+    UNIQUE KEY uk_file_name (file_name),
+    UNIQUE KEY uk_object_key (object_key),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识库文档表';
