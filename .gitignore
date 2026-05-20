@@ -52,6 +52,12 @@ logs/
 ### Upload Files ###
 uploads/
 
+### Maven Local Repository ###
+maven-repo/
+
+### Node Modules ###
+frontend/node_modules/
+
 ### Temp Scripts ###
 *.sh
 *.py
