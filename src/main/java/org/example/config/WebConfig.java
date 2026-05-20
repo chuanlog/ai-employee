@@ -1,7 +1,5 @@
 package org.example.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -29,10 +27,5 @@ public class WebConfig implements WebMvcConfigurer {
                 jsonConverter.setDefaultCharset(StandardCharsets.UTF_8);
             }
         }
-    }
-    
-    @Bean
-    public ObjectMapper objectMapper() {
-        return new ObjectMapper();
     }
 }
