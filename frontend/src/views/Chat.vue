@@ -10,7 +10,7 @@
           {{ msg.type === 'user' ? '我' : 'AI' }}
         </div>
         <div class="content">
-          <p>{{ msg.content }}</p>
+          <div class="markdown-body" v-html="msg.content ? marked.parse(msg.content) : ''"></div>
           <div v-if="msg.type === 'ai' && msg.showTransferBtn" class="transfer-btn-container">
             <el-button size="small" type="danger" @click="transferToHuman(msg.question)">
               转人工
@@ -36,6 +36,18 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from '../axios'
+import { marked } from 'marked'
+import hljs from 'highlight.js'
+import 'highlight.js/styles/github.css'
+import 'github-markdown-css/github-markdown.css'
+
+marked.setOptions({
+  highlight: function (code, lang) {
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext'
+    return hljs.highlight(code, { language }).value
+  },
+  breaks: true,
+})
 
 const messages = ref([])
 const inputMessage = ref('')
@@ -214,6 +226,26 @@ const scrollToBottom = () => {
   padding: 12px 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow-x: auto;
+}
+
+.markdown-body {
+  background: transparent !important;
+  font-family: inherit !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+/* User message styles override */
+.message.user .markdown-body {
+  color: white !important;
+}
+.message.user .markdown-body p, 
+.message.user .markdown-body li {
+  color: white !important;
+}
+.message.user .markdown-body code {
+  color: #333 !important;
 }
 
 .content p {
