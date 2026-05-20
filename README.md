@@ -1,6 +1,6 @@
-# SuperBizAgent
+# ai-employee
 
-> 基于 Spring Boot + Vue 3 + AI Agent 的智能问答、知识库与运维协同系统
+> 基于 Spring Boot + Vue 3 + AI Agent 的智能问答、知识库的ai员工系统
 
 ## 配置须知
 
