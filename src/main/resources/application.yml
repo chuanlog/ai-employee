@@ -44,6 +44,16 @@ spring:
     username: root
     password: chenyongchuan0019
     driver-class-name: com.mysql.cj.jdbc.Driver
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:schema.sql
+  jpa:
+    defer-datasource-initialization: true
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
     
     # Spring AI MCP 客户端配置
     # 如果使用mock数据，请注释这部分内容(目前使用docker，这段不要管)
@@ -84,7 +94,7 @@ chat:
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/**/*.xml
-  type-aliases-package: org.example.dto
+  type-aliases-package: org.example.entity
   configuration:
     map-underscore-to-camel-case: true
     cache-enabled: false
@@ -110,3 +120,7 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: alpha
     tags-sorter: alpha
+
+jwt:
+  secret: ai-employee-secret-key-2024-must-be-at-least-32-bytes-long-for-hs256
+  expire: 86400000
