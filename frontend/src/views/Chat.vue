@@ -39,7 +39,6 @@ import axios from '../axios'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
-import 'github-markdown-css/github-markdown.css'
 
 marked.setOptions({
   highlight: function (code, lang) {
@@ -57,11 +56,16 @@ onMounted(async () => {
   try {
     const res = await axios.get('/api/chat/history')
     if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      messages.value = res.data.data.map(msg => ({
-        type: msg.role === 'assistant' ? 'ai' : 'user',
-        content: msg.content,
-        showTransferBtn: false
-      }))
+      messages.value = res.data.data.map((msg, index, array) => {
+        const isAI = msg.role === 'assistant'
+        // 所有AI消息都显示转人工按钮（包括历史消息）
+        return {
+          type: isAI ? 'ai' : 'user',
+          content: msg.content,
+          question: msg.question || '',
+          showTransferBtn: isAI
+        }
+      })
     } else {
       messages.value = [
         { type: 'ai', content: '您好！我是 AI Employee，请问有什么可以帮助您的？' }
@@ -115,8 +119,12 @@ const sendMessage = async () => {
     showTransfer = true
     
     console.log('提取到的回答:', answer)
-    messages.value[messages.value.length - 1].content = answer
-    messages.value[messages.value.length - 1].showTransferBtn = showTransfer
+    const index = messages.value.length - 1
+    messages.value[index] = {
+      ...messages.value[index],
+      content: answer,
+      showTransferBtn: true
+    }
   } catch (error) {
     console.error('请求失败:', error)
     tempMessage.content = '抱歉，暂时无法回答您的问题，请稍后重试。\n\n您也可以点击下方按钮转人工服务。'
@@ -234,18 +242,185 @@ const scrollToBottom = () => {
   font-family: inherit !important;
   font-size: 14px !important;
   line-height: 1.6 !important;
+  color: #333 !important;
 }
 
+.markdown-body * {
+  color: inherit !important;
+}
+
+.markdown-body p,
+.markdown-body li,
+.markdown-body span,
+.markdown-body strong,
+.markdown-body em {
+  color: #333 !important;
+}
+
+/* Fix dark table styles for better readability - HIGH PRIORITY OVERRIDE */
+.chat-container .chat-messages .message .content table,
+.chat-container .chat-messages .message .content .markdown-body table,
+.chat-container .chat-messages .message .content > table,
+.chat-container .chat-messages .message .content :deep(table) {
+  background-color: #ffffff !important;
+  border-collapse: collapse !important;
+  width: 100% !important;
+  font-size: 13px !important;
+  box-shadow: none !important;
+}
+
+.chat-container .chat-messages .message .content table th,
+.chat-container .chat-messages .message .content table td,
+.chat-container .chat-messages .message .content .markdown-body table th,
+.chat-container .chat-messages .message .content .markdown-body table td,
+.chat-container .chat-messages .message .content > table th,
+.chat-container .chat-messages .message .content > table td,
+.chat-container .chat-messages .message .content :deep(table th),
+.chat-container .chat-messages .message .content :deep(table td) {
+  color: #333333 !important;
+  background-color: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  padding: 10px 14px !important;
+  text-align: left !important;
+  font-weight: normal !important;
+}
+
+.chat-container .chat-messages .message .content table th,
+.chat-container .chat-messages .message .content .markdown-body table th,
+.chat-container .chat-messages .message .content > table th,
+.chat-container .chat-messages .message .content :deep(table th) {
+  background-color: #f8f9fa !important;
+  font-weight: 600 !important;
+  color: #212529 !important;
+}
+
+.chat-container .chat-messages .message .content table tr,
+.chat-container .chat-messages .message .content .markdown-body table tr,
+.chat-container .chat-messages .message .content > table tr,
+.chat-container .chat-messages .message .content :deep(table tr) {
+  background-color: #ffffff !important;
+}
+
+.chat-container .chat-messages .message .content table tr:nth-child(even) td,
+.chat-container .chat-messages .message .content .markdown-body table tr:nth-child(even) td,
+.chat-container .chat-messages .message .content > table tr:nth-child(even) td,
+.chat-container .chat-messages .message .content :deep(table tr:nth-child(even) td) {
+  background-color: #fafafa !important;
+}
+
+.chat-container .chat-messages .message .content table tr:hover td,
+.chat-container .chat-messages .message .content .markdown-body table tr:hover td {
+  background-color: #f0f0f0 !important;
+}
+
+/* Code block styles */
+.content pre,
+.content code,
+.content .markdown-body pre,
+.content .markdown-body code {
+  background-color: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+  font-size: 13px !important;
+}
+
+.content pre,
+.content .markdown-body pre {
+  padding: 16px !important;
+  border-radius: 8px !important;
+  overflow-x: auto !important;
+  line-height: 1.5 !important;
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+}
+
+.content code,
+.content .markdown-body code {
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
+  font-size: 12px !important;
+}
+
+.content pre code,
+.content .markdown-body pre code {
+  padding: 0 !important;
+  font-size: 13px !important;
+}
+
+/* Syntax highlighting colors */
+.content .hljs,
+.content .markdown-body .hljs {
+  background: transparent !important;
+}
+
+.content .hljs-keyword,
+.content .markdown-body .hljs-keyword {
+  color: #569cd6 !important;
+}
+
+.content .hljs-string,
+.content .markdown-body .hljs-string {
+  color: #ce9178 !important;
+}
+
+.content .hljs-number,
+.content .markdown-body .hljs-number {
+  color: #b5cea8 !important;
+}
+
+.content .hljs-comment,
+.content .markdown-body .hljs-comment {
+  color: #6a9955 !important;
+}
+
+.content .hljs-function,
+.content .markdown-body .hljs-function {
+  color: #dcdcaa !important;
+}
+
+/* Fix inline code in user messages */
 /* User message styles override */
 .message.user .markdown-body {
   color: white !important;
 }
+
+.message.user .markdown-body table {
+  background-color: rgba(255,255,255,0.1) !important;
+}
+
+.message.user .markdown-body table th,
+.message.user .markdown-body table td {
+  color: white !important;
+  background-color: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+.message.user .markdown-body table th {
+  background-color: rgba(255,255,255,0.15) !important;
+}
+
+.message.user .markdown-body table tr:nth-child(even) td {
+  background-color: rgba(255,255,255,0.05) !important;
+}
+
+.message.user .markdown-body pre,
+.message.user .markdown-body pre code {
+  background-color: rgba(0,0,0,0.3) !important;
+  color: #fff !important;
+}
+.message.user .markdown-body * {
+  color: white !important;
+}
 .message.user .markdown-body p, 
-.message.user .markdown-body li {
+.message.user .markdown-body li,
+.message.user .markdown-body span,
+.message.user .markdown-body strong,
+.message.user .markdown-body em {
   color: white !important;
 }
 .message.user .markdown-body code {
   color: #333 !important;
+  background-color: rgba(255,255,255,0.2) !important;
 }
 
 .content p {
