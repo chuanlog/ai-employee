@@ -57,6 +57,17 @@ maven-repo/
 
 ### Node Modules ###
 frontend/node_modules/
+frontend/.npm-cache/
+frontend/.cache/
+frontend/.temp/
+
+### Frontend Build Output ###
+frontend/dist/
+frontend/dist-ssr/
+frontend/.vite/
+frontend/*.local
+frontend/*.tmp
+frontend/vite.config.js.timestamp-*.mjs
 
 ### Temp Scripts ###
 *.sh
