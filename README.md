@@ -55,7 +55,7 @@ npm run preview
 
 ## 项目简介
 
-`SuperBizAgent` 是一个面向智能问答、知识库管理、工单协同和 AIOps 运维分析的业务代理系统，采用前后端分离架构：后端基于 Spring Boot 提供 AI、RAG、用户、工单和管理能力，前端基于 Vue 3 + Element Plus 提供登录、聊天、知识库和后台管理页面。
+`ai-employee` 是一个面向智能问答、知识库管理、工单协同和 AIOps 运维分析的业务代理系统，采用前后端分离架构：后端基于 Spring Boot 提供 AI、RAG、用户、工单和管理能力，前端基于 Vue 3 + Element Plus 提供登录、聊天、知识库和后台管理页面。
 
 - 智能对话：支持普通问答、工具调用、Markdown 渲染和转人工工单提交。
 - 对话记录链路：聊天消息先进入 Redis 会话上下文，再异步写入 MySQL，前端初始化时自动恢复最近历史记录。
