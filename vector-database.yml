@@ -2,6 +2,7 @@ services:
   etcd:
     container_name: milvus-etcd
     image: quay.io/coreos/etcd:v3.5.18
+    restart: unless-stopped
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
       - ETCD_AUTO_COMPACTION_RETENTION=1000
@@ -19,6 +20,7 @@ services:
   minio:
     container_name: milvus-minio
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    restart: unless-stopped
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -37,6 +39,7 @@ services:
   standalone:
     container_name: milvus-standalone
     image: milvusdb/milvus:v2.5.10
+    restart: unless-stopped
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined
@@ -61,6 +64,7 @@ services:
   attu:
     container_name: milvus-attu
     image: zilliz/attu:v2.5
+    restart: unless-stopped
     ports:
       - "8000:3000" # 把本地的 8000 端口映射到容器的 3000 端口 (Attu 默认端口)
     environment:
