@@ -62,6 +62,7 @@ frontend/.cache/
 frontend/.temp/
 
 ### Frontend Build Output ###
+node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/.vite/
