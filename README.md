@@ -95,6 +95,65 @@ npm run preview
 - 管理员可在工单列表中查看、处理和回访工单，普通用户可在“我的工单”中查看个人工单进度。
 - 系统保留 `POST /api/ai_ops` 接口，用于触发流式 AIOps 分析和诊断报告生成。
 
+## 单元测试
+
+本项目在 `src/test` 下补充了后端核心模块的单元测试，主要使用 `JUnit 5`、`Mockito` 和 Spring Test 工具类完成隔离测试。测试重点放在业务逻辑、边界条件、异常分支和外部依赖 Mock 上，避免普通单测直接依赖真实数据库、Redis 或外部 AI 服务。
+
+### 1. 测试覆盖内容
+
+- 会话上下文：`ChatSessionTest` 覆盖历史消息窗口裁剪、防御性拷贝和清空历史。
+- 文档分片：`DocumentChunkServiceTest` 覆盖空内容、Markdown 标题分段、长文本分片和 overlap 行为。
+- 用户与权限工具：`RequestUserUtilsTest`、`JwtUtilsTest` 覆盖请求属性读取、管理员识别、JWT 生成与解析。
+- Redis 会话存储：`ChatSessionStoreTest` 通过 Mock `StringRedisTemplate` 覆盖会话读写、清空历史和异步落库队列入队。
+- 用户服务：`UserServiceImplTest` 覆盖登录、创建用户、权限校验、用户更新和管理员删除保护。
+- 工单服务：`TicketServiceImplTest` 覆盖创建工单、状态文案转换、处理工单和删除限制。
+- 知识库接口：`KnowledgeBaseControllerTest` 通过 Mock 服务层覆盖上传、索引失败降级提示、异常响应和向量库重建。
+- 向量计算：`VectorEmbeddingServiceTest` 覆盖余弦相似度计算、维度不匹配异常和空批量输入。
+
+由于当前本地环境可能使用较新的 JDK，测试资源中增加了 `src/test/resources/mockito-extensions/org.mockito.plugins.MockMaker`，将 Mockito 切换为 `mock-maker-subclass`，避免 Java 25 下 ByteBuddy inline mock maker 兼容性问题。
+
+### 2. 如何运行测试
+
+后端测试需要在项目根目录执行，也就是包含 `pom.xml` 的目录：
+
+```bash
+cd /Users/bytedance/IdeaProjects/ai-employee
+```
+
+运行全部后端测试：
+
+```bash
+mvn test
+```
+
+只运行本次补充的单元测试：
+
+```bash
+mvn test -Dtest=ChatSessionTest,DocumentChunkServiceTest,RequestUserUtilsTest,JwtUtilsTest,ChatSessionStoreTest,UserServiceImplTest,TicketServiceImplTest,KnowledgeBaseControllerTest,VectorEmbeddingServiceTest
+```
+
+如果当前终端停留在 `frontend` 目录，不要直接执行 `mvn test`，因为前端目录没有 `pom.xml`。可以先回到根目录，或使用 `-f` 指定后端 Maven 项目文件：
+
+```bash
+mvn -f ../pom.xml test -Dtest=ChatSessionTest,DocumentChunkServiceTest,RequestUserUtilsTest,JwtUtilsTest,ChatSessionStoreTest,UserServiceImplTest,TicketServiceImplTest,KnowledgeBaseControllerTest,VectorEmbeddingServiceTest
+```
+
+### 3. 如何判断测试结果
+
+测试成功时，Maven 输出末尾会出现 `BUILD SUCCESS`，并且结果统计中 `Failures` 和 `Errors` 都为 `0`，例如：
+
+```text
+Tests run: 38, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+常见失败判断方式：
+
+- `BUILD FAILURE` 且提示 `no POM in this directory`：说明命令运行目录不对，需要回到项目根目录或使用 `mvn -f ../pom.xml ...`。
+- `Failures > 0`：测试断言失败，通常表示实际结果与预期业务行为不一致。
+- `Errors > 0`：测试执行过程中出现异常，可能是 Mock、配置、Spring 上下文或外部依赖问题。
+- `COMPILATION ERROR`：测试代码或业务代码编译失败，需要先根据错误行号修复编译问题。
+
 ## 技术栈
 
 | 技术                            | 版本     | 说明                  |
