@@ -42,6 +42,18 @@ class TicketServiceImplTest {
     }
 
     @Test
+    void shouldRejectCreateTicket_whenQuestionIsBlank() {
+        TicketCreateRequest request = new TicketCreateRequest();
+        request.setQuestion("   ");
+
+        RuntimeException exception = Assertions.assertThrows(RuntimeException.class,
+                () -> ticketService.createTicket(request, 10L, "alice", "AI 回答"));
+
+        Assertions.assertEquals("工单问题不能为空", exception.getMessage(), "空问题不应创建工单");
+        Mockito.verify(ticketService, Mockito.never()).save(Mockito.any(TicketEntity.class));
+    }
+
+    @Test
     void shouldReturnTicketWithStatusText() {
         TicketEntity ticket = buildTicket(TicketConstants.STATUS_COMPLETED);
         Mockito.doReturn(ticket).when(ticketService).getById(1L);

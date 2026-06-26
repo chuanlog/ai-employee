@@ -29,10 +29,14 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketEntity> i
     @Override
     @Transactional
     public TicketDTO createTicket(TicketCreateRequest request, Long userId, String username, String aiAnswer) {
+        if (request == null || !StringUtils.hasText(request.getQuestion())) {
+            throw new RuntimeException("工单问题不能为空");
+        }
+
         TicketEntity ticket = new TicketEntity();
         ticket.setUserId(userId);
         ticket.setUsername(username);
-        ticket.setQuestion(request.getQuestion());
+        ticket.setQuestion(request.getQuestion().trim());
         ticket.setAiAnswer(aiAnswer);
         ticket.setStatus(TicketConstants.STATUS_PENDING);
         ticket.setCreatedAt(LocalDateTime.now());

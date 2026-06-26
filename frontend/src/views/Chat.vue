@@ -12,7 +12,7 @@
         <div class="content">
           <div class="markdown-body" v-html="msg.content ? marked.parse(msg.content) : ''"></div>
           <div v-if="msg.type === 'ai' && msg.showTransferBtn" class="transfer-btn-container">
-            <el-button size="small" type="danger" @click="transferToHuman(msg.question)">
+            <el-button size="small" type="danger" @click="transferToHuman(msg, index)">
               转人工
             </el-button>
           </div>
@@ -52,20 +52,38 @@ const messages = ref([])
 const inputMessage = ref('')
 const messagesContainer = ref(null)
 
+const buildHistoryMessages = (historyMessages) => {
+  let latestUserQuestion = ''
+  return historyMessages.map((msg) => {
+    const isAI = msg.role === 'assistant'
+    if (!isAI) {
+      latestUserQuestion = msg.content || ''
+    }
+
+    return {
+      type: isAI ? 'ai' : 'user',
+      content: msg.content,
+      question: isAI ? (msg.question || latestUserQuestion) : '',
+      showTransferBtn: isAI
+    }
+  })
+}
+
+const findPreviousQuestion = (messageIndex) => {
+  for (let index = messageIndex - 1; index >= 0; index -= 1) {
+    const message = messages.value[index]
+    if (message?.type === 'user' && message.content?.trim()) {
+      return message.content
+    }
+  }
+  return ''
+}
+
 onMounted(async () => {
   try {
     const res = await axios.get('/api/chat/history')
     if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-      messages.value = res.data.data.map((msg, index, array) => {
-        const isAI = msg.role === 'assistant'
-        // 所有AI消息都显示转人工按钮（包括历史消息）
-        return {
-          type: isAI ? 'ai' : 'user',
-          content: msg.content,
-          question: msg.question || '',
-          showTransferBtn: isAI
-        }
-      })
+      messages.value = buildHistoryMessages(res.data.data)
     } else {
       messages.value = [
         { type: 'ai', content: '您好！我是 AI Employee，请问有什么可以帮助您的？' }
@@ -104,8 +122,6 @@ const sendMessage = async () => {
     console.log('API 响应:', response)
     
     let answer = '暂无回答'
-    let showTransfer = false
-    
     if (response.data?.data?.answer) {
       answer = response.data.data.answer
     } else if (response.data?.Answer) {
@@ -115,8 +131,6 @@ const sendMessage = async () => {
     } else if (typeof response.data === 'string') {
       answer = response.data
     }
-    
-    showTransfer = true
     
     console.log('提取到的回答:', answer)
     const index = messages.value.length - 1
@@ -137,8 +151,14 @@ const sendMessage = async () => {
   })
 }
 
-const transferToHuman = async (question) => {
+const transferToHuman = async (message, messageIndex) => {
   try {
+    const question = (message.question || findPreviousQuestion(messageIndex)).trim()
+    if (!question) {
+      ElMessage.warning('未找到对应的问题内容，请重新发送问题后再转人工')
+      return
+    }
+
     await ElMessageBox.confirm(
       '确定要将此问题转人工处理吗？',
       '确认转人工',
@@ -149,8 +169,7 @@ const transferToHuman = async (question) => {
       }
     )
     
-    const aiMessage = messages.value[messages.value.length - 1]
-    await axios.post('/api/tickets', { question, aiAnswer: aiMessage.content })
+    await axios.post('/api/tickets', { question, aiAnswer: message.content || '' })
     ElMessage.success('已成功提交工单，运维人员会尽快处理！')
     
     messages.value.push({ 
