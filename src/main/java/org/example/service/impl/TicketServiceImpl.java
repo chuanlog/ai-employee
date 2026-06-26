@@ -9,14 +9,14 @@ import org.example.dto.TicketCreateRequest;
 import org.example.dto.TicketDTO;
 import org.example.dto.TicketHandleRequest;
 import org.example.entity.TicketEntity;
-import org.example.entity.UserEntity;
 import org.example.mapper.TicketMapper;
+import org.example.service.TicketKnowledgeBaseFeedbackService;
 import org.example.service.TicketService;
-import org.example.service.UserService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
@@ -24,7 +24,7 @@ import java.time.LocalDateTime;
 public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketEntity> implements TicketService {
 
     @Autowired
-    private UserService userService;
+    private TicketKnowledgeBaseFeedbackService ticketKnowledgeBaseFeedbackService;
 
     @Override
     @Transactional
@@ -94,23 +94,18 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketEntity> i
 
         updateById(ticket);
 
-        addToKnowledgeBase(id);
+        ticketKnowledgeBaseFeedbackService.feedHandledTicket(buildFeedbackSnapshot(ticket));
 
         return convertToDTO(ticket);
     }
 
     @Override
-    @Transactional
     public void addToKnowledgeBase(Long ticketId) {
         TicketEntity ticket = getById(ticketId);
-        if (ticket == null || ticket.getResult() == null || ticket.getResult().isEmpty()) {
+        if (ticket == null || !StringUtils.hasText(ticket.getResult())) {
             return;
         }
-
-        String content = "问题：" + ticket.getQuestion() + "\n\n" +
-                        "答案：" + ticket.getResult();
-
-        System.out.println("添加到知识库：" + content);
+        ticketKnowledgeBaseFeedbackService.feedHandledTicket(buildFeedbackSnapshot(ticket));
     }
 
     @Override
@@ -147,5 +142,11 @@ public class TicketServiceImpl extends ServiceImpl<TicketMapper, TicketEntity> i
         }
 
         return dto;
+    }
+
+    private TicketEntity buildFeedbackSnapshot(TicketEntity source) {
+        TicketEntity snapshot = new TicketEntity();
+        BeanUtils.copyProperties(source, snapshot);
+        return snapshot;
     }
 }

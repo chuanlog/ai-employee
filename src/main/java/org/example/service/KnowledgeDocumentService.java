@@ -17,6 +17,8 @@ public interface KnowledgeDocumentService extends IService<KnowledgeDocumentEnti
 
     KnowledgeDocumentDTO replaceDocument(Long id, MultipartFile file, Long userId, String username) throws Exception;
 
+    KnowledgeDocumentDTO saveTextDocument(String fileName, String content, Long uploaderId, String uploaderName) throws Exception;
+
     void deleteDocument(Long id) throws Exception;
 
     RebuildVectorStoreResponse rebuildVectorStore();

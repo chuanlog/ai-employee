@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,6 +39,7 @@ public class KnowledgeDocumentServiceImpl extends ServiceImpl<KnowledgeDocumentM
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_INDEXED = "INDEXED";
     private static final String STATUS_ERROR = "ERROR";
+    private static final String MARKDOWN_CONTENT_TYPE = "text/markdown";
     private static final DateTimeFormatter OBJECT_KEY_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd");
 
     @Autowired
@@ -153,6 +155,36 @@ public class KnowledgeDocumentServiceImpl extends ServiceImpl<KnowledgeDocumentM
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
+    public KnowledgeDocumentDTO saveTextDocument(String fileName, String content, Long uploaderId, String uploaderName)
+            throws Exception {
+        if (!StringUtils.hasText(fileName)) {
+            throw new RuntimeException("知识库文本文件名不能为空");
+        }
+        if (!StringUtils.hasText(content)) {
+            throw new RuntimeException("知识库文本内容不能为空");
+        }
+
+        String cleanFileName = StringUtils.cleanPath(fileName);
+        byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
+        KnowledgeDocumentEntity existing = lambdaQuery()
+                .eq(KnowledgeDocumentEntity::getFileName, cleanFileName)
+                .one();
+        if (existing != null) {
+            return replaceTextDocument(existing, cleanFileName, content, bytes, uploaderId, uploaderName);
+        }
+
+        String objectKey = buildObjectKey(cleanFileName);
+        minioService.uploadObject(objectKey, bytes, MARKDOWN_CONTENT_TYPE);
+
+        KnowledgeDocumentEntity entity = buildTextDocumentEntity(cleanFileName, objectKey, bytes.length,
+                uploaderId, uploaderName);
+        indexTextDocument(entity, content);
+        save(entity);
+        return toDto(entity);
+    }
+
+    @Override
     public void deleteDocument(Long id) throws Exception {
         KnowledgeDocumentEntity entity = requireDocument(id);
         vectorIndexService.deleteBySource(entity.getObjectKey());
@@ -245,6 +277,79 @@ public class KnowledgeDocumentServiceImpl extends ServiceImpl<KnowledgeDocumentM
         String safeFileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
         String datePrefix = LocalDateTime.now().format(OBJECT_KEY_DATE_FORMATTER);
         return "knowledge-base/" + datePrefix + "/" + UUID.randomUUID() + "-" + safeFileName;
+    }
+
+    private KnowledgeDocumentDTO replaceTextDocument(KnowledgeDocumentEntity existing, String fileName, String content,
+                                                     byte[] bytes, Long uploaderId, String uploaderName)
+            throws Exception {
+        String newObjectKey = buildObjectKey(fileName);
+        minioService.uploadObject(newObjectKey, bytes, MARKDOWN_CONTENT_TYPE);
+
+        String oldObjectKey = existing.getObjectKey();
+        String oldFileName = existing.getFileName();
+        String oldContentType = existing.getContentType();
+        Long oldFileSize = existing.getFileSize();
+        Long oldUploaderId = existing.getUploaderId();
+        String oldUploaderName = existing.getUploaderName();
+        String oldStatus = existing.getStatus();
+        String oldErrorMessage = existing.getErrorMessage();
+        existing.setFileName(fileName);
+        existing.setObjectKey(newObjectKey);
+        existing.setContentType(MARKDOWN_CONTENT_TYPE);
+        existing.setFileSize((long) bytes.length);
+        existing.setUploaderId(uploaderId);
+        existing.setUploaderName(uploaderName);
+        existing.setUpdatedAt(LocalDateTime.now());
+
+        try {
+            indexTextDocument(existing, content);
+            if (!STATUS_INDEXED.equals(existing.getStatus())) {
+                throw new RuntimeException("文本知识文档索引失败: " + existing.getErrorMessage());
+            }
+            vectorIndexService.deleteBySource(oldObjectKey);
+            minioService.deleteObject(oldObjectKey);
+        } catch (Exception e) {
+            existing.setFileName(oldFileName);
+            existing.setObjectKey(oldObjectKey);
+            existing.setContentType(oldContentType);
+            existing.setFileSize(oldFileSize);
+            existing.setUploaderId(oldUploaderId);
+            existing.setUploaderName(oldUploaderName);
+            existing.setStatus(oldStatus);
+            existing.setErrorMessage(oldErrorMessage);
+            minioService.deleteObject(newObjectKey);
+            throw e;
+        }
+
+        updateById(existing);
+        return toDto(existing);
+    }
+
+    private KnowledgeDocumentEntity buildTextDocumentEntity(String fileName, String objectKey, long fileSize,
+                                                            Long uploaderId, String uploaderName) {
+        KnowledgeDocumentEntity entity = new KnowledgeDocumentEntity();
+        entity.setFileName(fileName);
+        entity.setObjectKey(objectKey);
+        entity.setContentType(MARKDOWN_CONTENT_TYPE);
+        entity.setFileSize(fileSize);
+        entity.setUploaderId(uploaderId);
+        entity.setUploaderName(uploaderName);
+        entity.setStatus(STATUS_PENDING);
+        entity.setCreatedAt(LocalDateTime.now());
+        entity.setUpdatedAt(LocalDateTime.now());
+        return entity;
+    }
+
+    private void indexTextDocument(KnowledgeDocumentEntity entity, String content) {
+        try {
+            vectorIndexService.indexDocument(entity.getObjectKey(), entity.getFileName(), content);
+            entity.setStatus(STATUS_INDEXED);
+            entity.setErrorMessage(null);
+        } catch (Exception e) {
+            logger.error("文本知识文档索引失败: {}", entity.getFileName(), e);
+            entity.setStatus(STATUS_ERROR);
+            entity.setErrorMessage(truncateError(e.getMessage()));
+        }
     }
 
     private String truncateError(String message) {

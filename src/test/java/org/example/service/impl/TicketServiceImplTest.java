@@ -5,19 +5,25 @@ import org.example.dto.TicketCreateRequest;
 import org.example.dto.TicketDTO;
 import org.example.dto.TicketHandleRequest;
 import org.example.entity.TicketEntity;
+import org.example.service.TicketKnowledgeBaseFeedbackService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class TicketServiceImplTest {
 
     private TicketServiceImpl ticketService;
+    private TicketKnowledgeBaseFeedbackService ticketKnowledgeBaseFeedbackService;
 
     @BeforeEach
     void setUp() {
         ticketService = Mockito.spy(new TicketServiceImpl());
+        ticketKnowledgeBaseFeedbackService = Mockito.mock(TicketKnowledgeBaseFeedbackService.class);
+        ReflectionTestUtils.setField(ticketService, "ticketKnowledgeBaseFeedbackService",
+                ticketKnowledgeBaseFeedbackService);
     }
 
     @Test
@@ -71,6 +77,7 @@ class TicketServiceImplTest {
         Assertions.assertEquals(TicketConstants.STATUS_COMPLETED, dto.getStatus(), "处理后应标记为已完成");
         Assertions.assertEquals("扩容并清理异常进程", dto.getResult(), "处理结果应写入工单");
         Mockito.verify(ticketService).updateById(ticket);
+        Mockito.verify(ticketKnowledgeBaseFeedbackService).feedHandledTicket(Mockito.any(TicketEntity.class));
     }
 
     @Test
