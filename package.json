@@ -1,0 +1,21 @@
+{
+  "name": "ai-employee",
+  "version": "1.0.0",
+  "description": "> 基于 Spring Boot + Vue 3 + AI Agent 的智能问答、知识库的ai员工系统",
+  "main": "deploy.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chuanlog/ai-employee.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chuanlog/ai-employee/issues"
+  },
+  "homepage": "https://github.com/chuanlog/ai-employee#readme"
+}
