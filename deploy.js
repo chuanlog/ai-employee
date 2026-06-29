@@ -1,15 +1,14 @@
 /**
  * AI Employee - Full Deploy Script
  * 前后端全量部署到云服务器 47.116.141.4
- * 用法: node deploy.js
  */
 const { Client } = require('ssh2');
 const fs = require('fs');
 const path = require('path');
 
 const SERVER = {
-  host: '47.116.141.4', port: 22, username: 'root',
-  password: 'Chenyongchuan0019', readyTimeout: 30000
+  host: 'xxxxx', port: 22, username: 'root',
+  password: 'xxxxx', readyTimeout: 30000
 };
 
 const APP_DIR = '/opt/ai-employee';

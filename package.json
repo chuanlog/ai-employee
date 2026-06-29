@@ -17,5 +17,15 @@
   "bugs": {
     "url": "https://github.com/chuanlog/ai-employee/issues"
   },
-  "homepage": "https://github.com/chuanlog/ai-employee#readme"
+  "homepage": "https://github.com/chuanlog/ai-employee#readme",
+  "dependencies": {
+    "asn1": "^0.2.6",
+    "bcrypt-pbkdf": "^1.0.2",
+    "buildcheck": "^0.0.7",
+    "cpu-features": "^0.0.10",
+    "nan": "^2.28.0",
+    "safer-buffer": "^2.1.2",
+    "ssh2": "^1.17.0",
+    "tweetnacl": "^0.14.5"
+  }
 }

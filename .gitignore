@@ -51,6 +51,7 @@ logs/
 
 ### Upload Files ###
 uploads/
+NUL
 
 ### Maven Local Repository ###
 maven-repo/
